@@ -3,25 +3,75 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0a0f;
+  --foreground: #ededed;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121218;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d1b69;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3d2b79;
+}
+
+/* Glow animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px currentColor; }
+  50% { box-shadow: 0 0 20px currentColor, 0 0 40px currentColor; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes rune-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.rune-spin {
+  animation: rune-spin 20s linear infinite;
+}
+
+/* Card selection */
+.card-selected {
+  animation: pulse-glow 1s ease-in-out infinite;
+}
+
+/* Dark fantasy gradients */
+.bg-dark-fantasy {
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 30%, #0a0a0f 60%, #121218 100%);
+}
+
+.text-gold {
+  color: #d4a574;
+}
+
+.border-gold {
+  border-color: #d4a574;
 }
