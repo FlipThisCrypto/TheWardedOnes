@@ -144,7 +144,7 @@ export function saveDeckToStorage(deck: DeckList): SaveDeckResult {
     } else {
       decks.push(deck);
     }
-    localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
+    window.localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
     return { ok: true };
   } catch {
     return { ok: false, error: 'Failed to write storage' };
@@ -154,7 +154,7 @@ export function saveDeckToStorage(deck: DeckList): SaveDeckResult {
 export function loadDecksFromStorage(): DeckList[] {
   if (typeof window === 'undefined') return [];
   try {
-    const data = localStorage.getItem('warded-ones-decks');
+    const data = window.localStorage.getItem('warded-ones-decks');
     if (!data) return [];
     const parsed = JSON.parse(data) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -174,7 +174,7 @@ export function deleteDeckFromStorage(deckId: string): void {
   if (typeof window === 'undefined') return;
   try {
     const decks = loadDecksFromStorage().filter(d => d.id !== deckId);
-    localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
+    window.localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
   } catch {
     // ignore
   }
