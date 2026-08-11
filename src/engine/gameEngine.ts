@@ -11,6 +11,7 @@ import { applyDamageToUnit, applyDamageToPlayer } from './damage';
 import { applyStateBasedActions } from './stateBasedActions';
 import { isLegalAttackTarget } from './targeting';
 import { createGameEvent, type GameEventType } from './events';
+import { computeCombatRawDamage } from './combatMath';
 
 let instanceCounter = 0;
 /** Deterministic-friendly ids: counter only (no Date.now) for stable sims. */
@@ -552,13 +553,15 @@ export function executeAttack(
     const targetDef = getCardById(target.definitionId);
     if (!targetDef) return state;
     
-    // Calculate damage with element modifiers
-    const elementMod = getElementModifier(attackerDef.elements, targetDef.elements);
-    
     // Pierce: ignore target defense entirely; also pierces wards
     const pierces = hasKeyword(attacker.keywords, 'Pierce');
-    const targetDefense = pierces ? 0 : target.currentDefense;
-    const rawDamage = attacker.currentAttack - targetDefense + elementMod;
+    const { raw: rawDamage, elementMod } = computeCombatRawDamage({
+      attack: attacker.currentAttack,
+      defense: target.currentDefense,
+      attackerElements: attackerDef.elements,
+      defenderElements: targetDef.elements,
+      pierce: pierces,
+    });
     
     const dmgResult = applyDamageToUnit(target, {
       amount: rawDamage,
@@ -597,10 +600,14 @@ export function executeAttack(
     
     // Counter-attack: if target survived and can attack
     if (target.currentHp > 0 && target.currentAttack > 0) {
-      const counterMod = getElementModifier(targetDef.elements, attackerDef.elements);
       const counterPierces = hasKeyword(target.keywords, 'Pierce');
-      const attackerDefense = counterPierces ? 0 : attacker.currentDefense;
-      const counterRaw = target.currentAttack - attackerDefense + counterMod;
+      const { raw: counterRaw } = computeCombatRawDamage({
+        attack: target.currentAttack,
+        defense: attacker.currentDefense,
+        attackerElements: targetDef.elements,
+        defenderElements: attackerDef.elements,
+        pierce: counterPierces,
+      });
       
       const counter = applyDamageToUnit(attacker, {
         amount: counterRaw,
