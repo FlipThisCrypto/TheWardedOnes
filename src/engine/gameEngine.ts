@@ -491,28 +491,8 @@ function executeUtilityCard(state: GameState, card: CardInstance, def: CardDefin
   }
 }
 
-export function getAllBattlefieldCards(player: PlayerState): CardInstance[] {
-  const cards: CardInstance[] = [];
-  if (player.battlefield.mage.card) cards.push(player.battlefield.mage.card);
-  player.battlefield.fighters.forEach(s => { if (s.card) cards.push(s.card); });
-  player.battlefield.beasts.forEach(s => { if (s.card) cards.push(s.card); });
-  player.battlefield.totems.forEach(s => { if (s.card) cards.push(s.card); });
-  return cards;
-}
-
-function findCardOnBattlefield(player: PlayerState, instanceId: string): CardInstance | null {
-  if (player.battlefield.mage.card?.instanceId === instanceId) return player.battlefield.mage.card;
-  for (const s of player.battlefield.fighters) {
-    if (s.card?.instanceId === instanceId) return s.card;
-  }
-  for (const s of player.battlefield.beasts) {
-    if (s.card?.instanceId === instanceId) return s.card;
-  }
-  for (const s of player.battlefield.totems) {
-    if (s.card?.instanceId === instanceId) return s.card;
-  }
-  return null;
-}
+export { getAllBattlefieldCards, findCardOnBattlefield } from './queries';
+import { getAllBattlefieldCards, findCardOnBattlefield } from './queries';
 
 // ===== COMBAT =====
 

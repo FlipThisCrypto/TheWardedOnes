@@ -5,7 +5,7 @@
 import { CardInstance, CardType, PlayerState, GameState } from './types';
 import { getCardById } from '../data/cards';
 import { hasKeyword } from './keywords';
-import { getAllBattlefieldCards } from './gameEngine';
+import { getAllBattlefieldCards } from './queries';
 
 export type TargetKind = 'unit' | 'player' | 'any';
 
