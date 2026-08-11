@@ -42,5 +42,5 @@ export function suggestMulligan(
     reasons.push('No early play — ship highest cost card');
   }
 
-  return { replaceIndices: [...new Set(replaceIndices)].sort((a, b) => a - b), reasons };
+  return { replaceIndices: Array.from(new Set(replaceIndices)).sort((a, b) => a - b), reasons };
 }

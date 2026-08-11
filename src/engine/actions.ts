@@ -27,8 +27,11 @@ export type ActionResult =
   | { ok: true; state: GameState }
   | { ok: false; state: GameState; error: string; code: 'ILLEGAL_PHASE' | 'ILLEGAL_ACTION' | 'GAME_OVER' | 'ENGINE' };
 
-function deny(state: GameState, error: string, code: ActionResult extends { ok: false } ? never : never): ActionResult;
-function deny(state: GameState, error: string, code: 'ILLEGAL_PHASE' | 'ILLEGAL_ACTION' | 'GAME_OVER' | 'ENGINE'): ActionResult {
+function deny(
+  state: GameState,
+  error: string,
+  code: 'ILLEGAL_PHASE' | 'ILLEGAL_ACTION' | 'GAME_OVER' | 'ENGINE'
+): ActionResult {
   const s = structuredClone(state);
   addLog(s, `Action rejected: ${error}`, 'illegal_action');
   return { ok: false, state: s, error, code };
@@ -39,16 +42,7 @@ export function applyPlayerAction(state: GameState, action: PlayerAction): Actio
     return deny(state, 'Game is over', 'GAME_OVER');
   }
 
-  const kind = action.type as PlayerActionKind;
-  if (!isActionLegalInPhase(state.phase, kind) && action.type !== 'CONCEDE' && action.type !== 'END_TURN') {
-    // END_TURN allowed from main/combat via machine
-    if (action.type === 'ADVANCE_PHASE' && !isActionLegalInPhase(state.phase, 'ADVANCE_PHASE')) {
-      return deny(state, `Cannot advance during ${state.phase}`, 'ILLEGAL_PHASE');
-    }
-    if (action.type !== 'ADVANCE_PHASE' && action.type !== 'END_TURN') {
-      return deny(state, `${action.type} illegal in phase ${state.phase}`, 'ILLEGAL_PHASE');
-    }
-  }
+  // Phase gates enforced per-case below (END_TURN / CONCEDE have custom rules)
 
   switch (action.type) {
     case 'MULLIGAN': {

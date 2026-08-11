@@ -16,7 +16,7 @@ export class EventBus<Events extends Record<string, unknown>> {
   emit<K extends keyof Events>(event: K, payload: Events[K]): void {
     const set = this.handlers.get(event);
     if (!set) return;
-    for (const h of set) h(payload);
+    Array.from(set).forEach(h => h(payload));
   }
 
   clear(): void {

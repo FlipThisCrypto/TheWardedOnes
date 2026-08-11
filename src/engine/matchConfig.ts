@@ -43,10 +43,12 @@ export function validateMatchConfig(cfg: MatchConfig): string[] {
   return errors;
 }
 
-export function mergeMatchConfig(partial: Partial<MatchConfig>): MatchConfig {
+export function mergeMatchConfig(
+  partial: Omit<Partial<MatchConfig>, 'slots'> & { slots?: Partial<MatchConfig['slots']> } = {}
+): MatchConfig {
   return {
     ...DEFAULT_MATCH_CONFIG,
     ...partial,
-    slots: { ...DEFAULT_MATCH_CONFIG.slots, ...partial.slots },
+    slots: { ...DEFAULT_MATCH_CONFIG.slots, ...(partial.slots ?? {}) },
   };
 }

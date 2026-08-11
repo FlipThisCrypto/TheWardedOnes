@@ -15,7 +15,9 @@ describe('logic contracts', () => {
   });
 
   it('sample scripts use closed op set', () => {
-    const ops = new Set(Object.values(SAMPLE_SCRIPTS).flatMap(s => s.ops.map(o => o.op)));
+    const ops = Array.from(
+      new Set(Object.values(SAMPLE_SCRIPTS).flatMap(s => s.ops.map(o => o.op)))
+    );
     for (const op of ops) {
       expect([
         'damage', 'heal', 'draw', 'gain_resource', 'buff_stat', 'apply_keyword', 'log',

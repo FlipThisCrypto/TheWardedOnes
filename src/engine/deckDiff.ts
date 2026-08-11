@@ -16,7 +16,7 @@ export function diffDecks(a: string[], b: string[]): DeckDiff {
   const onlyA: string[] = [];
   const onlyB: string[] = [];
   const shared: string[] = [];
-  const keys = new Set([...setA.keys(), ...setB.keys()]);
+  const keys = Array.from(new Set([...Array.from(setA.keys()), ...Array.from(setB.keys())]));
   for (const k of keys) {
     const ca = setA.get(k) ?? 0;
     const cb = setB.get(k) ?? 0;
