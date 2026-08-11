@@ -503,9 +503,9 @@ export function executeAttack(
     });
     
     if (defenders.length > 0) {
-      // Must attack taunt unit first
+      // Must attack taunt unit first — return newState so the rejection is logged
       addLog(newState, `Cannot attack player directly while Taunt units are in play.`);
-      return state;
+      return newState;
     }
     
     let damage = Math.max(1, attacker.currentAttack);
