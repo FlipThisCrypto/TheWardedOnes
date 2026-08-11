@@ -265,6 +265,14 @@ export default function DeckBuilder() {
                   💾 Save
                 </button>
               </div>
+              {saveMessage && (
+                <p
+                  role="status"
+                  className={`text-xs mb-2 ${saveMessage.startsWith('Deck saved') ? 'text-green-400' : 'text-red-400'}`}
+                >
+                  {saveMessage}
+                </p>
+              )}
 
               {/* Slot counts */}
               <div className="grid grid-cols-3 gap-1 mb-3 text-[10px]">
