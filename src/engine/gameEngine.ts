@@ -12,6 +12,8 @@ import { applyStateBasedActions } from './stateBasedActions';
 import { isLegalAttackTarget } from './targeting';
 import { createGameEvent, type GameEventType } from './events';
 import { computeCombatRawDamage } from './combatMath';
+import { applyHotTicks, applyDotTicks, tickStatusDurations } from './statusEffects';
+import { applyEvolution } from './evolution';
 
 let instanceCounter = 0;
 /** Deterministic-friendly ids: counter only (no Date.now) for stable sims. */
@@ -348,23 +350,7 @@ export function playCard(state: GameState, cardInstanceId: string, targetSlotInd
 }
 
 function handleEvolution(player: PlayerState, card: CardInstance, def: CardDefinition): boolean {
-  // Find the card to evolve from
-  const allSlots = [
-    ...player.battlefield.fighters,
-    ...player.battlefield.beasts,
-  ];
-  
-  for (const slot of allSlots) {
-    if (slot.card && slot.card.definitionId === def.evolvesFrom) {
-      // Transfer relics
-      card.attachedRelics = [...slot.card.attachedRelics];
-      player.graveyard.push(slot.card);
-      slot.card = card;
-      card.canAttack = true; // evolved units can attack
-      return true;
-    }
-  }
-  return false;
+  return applyEvolution(player, card, def);
 }
 
 function placeInEmptySlot(slots: BattlefieldSlot[], card: CardInstance): void {
@@ -1121,28 +1107,9 @@ export function executeEndPhase(state: GameState): GameState {
     card.abilitiesUsedThisTurn = [];
     card.turnsInPlay += 1;
     
-    // Process HOTs
-    const hots = card.statusEffects.filter(e => e.type === 'hot');
-    for (const hot of hots) {
-      const def = getCardById(card.definitionId);
-      if (def) {
-        card.currentHp = Math.min(card.currentHp + hot.value, def.hp);
-      }
-    }
-    
-    // Tick down durations
-    card.statusEffects = card.statusEffects.filter(e => {
-      if (e.turnsRemaining === -1) return true; // permanent
-      e.turnsRemaining -= 1;
-      if (e.turnsRemaining <= 0) {
-        // Remove temporary buffs
-        if (e.stat === 'defense' && e.type === 'buff') {
-          card.currentDefense -= e.value;
-        }
-        return false;
-      }
-      return true;
-    });
+    applyHotTicks(card);
+    applyDotTicks(card);
+    tickStatusDurations(card);
   });
   
   // State-based actions: destroy dead units, check win
