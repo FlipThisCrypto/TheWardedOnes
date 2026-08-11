@@ -2,7 +2,13 @@
 
 Dark fantasy trading card game — web client + rules engine.
 
-## Quick start
+## Play online
+
+**GitHub Pages:** [https://flipthiscrypto.github.io/TheWardedOnes/](https://flipthiscrypto.github.io/TheWardedOnes/)
+
+(Deployed automatically from `main` via GitHub Actions.)
+
+## Quick start (local)
 
 ```bash
 npm install
@@ -17,8 +23,10 @@ Open [http://localhost:3000](http://localhost:3000).
 |---------|---------|
 | `npm run dev` | Next.js dev server |
 | `npm test` | Vitest unit/integration tests |
-| `npm run build` | Production build |
+| `npm run build` | Static export build |
+| `npm run build:pages` | Static export with GitHub Pages base path |
 | `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check |
 
 ## Architecture
 

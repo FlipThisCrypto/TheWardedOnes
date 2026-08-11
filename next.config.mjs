@@ -1,23 +1,22 @@
 /** @type {import('next').NextConfig} */
+
+// GitHub project pages: https://<user>.github.io/TheWardedOnes/
+const repoName = 'TheWardedOnes';
+const isGithubPages = process.env.GITHUB_PAGES === 'true';
+
 const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
+  images: { unoptimized: true },
   poweredByHeader: false,
   reactStrictMode: true,
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-        ],
-      },
-    ];
-  },
+  // Only apply basePath for Pages builds so local `next dev` stays at /
+  ...(isGithubPages
+    ? {
+        basePath: `/${repoName}`,
+        assetPrefix: `/${repoName}/`,
+      }
+    : {}),
 };
 
 export default nextConfig;
