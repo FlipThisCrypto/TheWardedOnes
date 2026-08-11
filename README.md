@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Warded Ones TCG
 
-## Getting Started
+Dark fantasy trading card game — web client + rules engine.
 
-First, run the development server:
+## Quick start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Next.js dev server |
+| `npm test` | Vitest unit/integration tests |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+See [docs/SYSTEMS.md](./docs/SYSTEMS.md) for the systems layer (schema, keywords, damage pipeline, simulation harness).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Engine**: `src/engine/*` — pure rules, deterministic RNG, SBAs
+- **Data**: `src/data/cards.ts` + catalog validation
+- **UI**: `src/app/*`, `src/components/*`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Prefer data-driven abilities/keywords over ad-hoc switches.
+- Add a Vitest case when changing combat, targeting, or deck validation.
+- Card definitions must pass `validateCardCatalog()`.
