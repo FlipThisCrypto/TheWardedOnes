@@ -20,6 +20,17 @@ describe('keywords helpers', () => {
     expect(hasKeyword(undefined, 'Ward')).toBe(false);
   });
 
+  it('Hex suppresses other keywords but not Hex itself', () => {
+    const hexed: KeywordData[] = [
+      { keyword: 'Hex' },
+      { keyword: 'Ward', value: 5 },
+      { keyword: 'Taunt' },
+    ];
+    expect(hasKeyword(hexed, 'Hex')).toBe(true);
+    expect(hasKeyword(hexed, 'Ward')).toBe(false);
+    expect(hasKeyword(hexed, 'Taunt')).toBe(false);
+  });
+
   it('getKeywordValue returns value or 0', () => {
     expect(getKeywordValue(sample, 'Ward')).toBe(3);
     expect(getKeywordValue(sample, 'Pierce')).toBe(0);
