@@ -31,6 +31,7 @@ export default function DeckBuilder() {
   const [searchText, setSearchText] = useState('');
   const [savedDecks, setSavedDecks] = useState<DeckList[]>(() => loadDecksFromStorage());
   const [showSavedDecks, setShowSavedDecks] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const filteredCards = useMemo(() => {
     return ALL_CARDS.filter(card => {
@@ -64,7 +65,12 @@ export default function DeckBuilder() {
       playerClass: mageCard?.cardClass || 'Battlemage',
       cards: deckCards,
     };
-    saveDeckToStorage(deck);
+    const result = saveDeckToStorage(deck);
+    if (!result.ok) {
+      setSaveMessage(result.error || 'Could not save deck');
+      return;
+    }
+    setSaveMessage('Deck saved.');
     setSavedDecks(loadDecksFromStorage());
   }, [deckCards, deckName]);
 

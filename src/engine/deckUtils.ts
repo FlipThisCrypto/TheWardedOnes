@@ -122,26 +122,60 @@ export function generateDefaultDeck(playerClass: CardClass): string[] {
   return deck;
 }
 
-export function saveDeckToStorage(deck: DeckList): void {
-  if (typeof window === 'undefined') return;
-  const decks = loadDecksFromStorage();
-  const existing = decks.findIndex(d => d.id === deck.id);
-  if (existing >= 0) {
-    decks[existing] = deck;
-  } else {
-    decks.push(deck);
+export interface SaveDeckResult {
+  ok: boolean;
+  error?: string;
+}
+
+/** Persist deck only if it passes validateDeck. */
+export function saveDeckToStorage(deck: DeckList): SaveDeckResult {
+  if (typeof window === 'undefined') {
+    return { ok: false, error: 'Storage unavailable' };
   }
-  localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
+  const validation = validateDeck(deck.cards);
+  if (!validation.valid) {
+    return { ok: false, error: validation.errors.join('; ') };
+  }
+  try {
+    const decks = loadDecksFromStorage();
+    const existing = decks.findIndex(d => d.id === deck.id);
+    if (existing >= 0) {
+      decks[existing] = deck;
+    } else {
+      decks.push(deck);
+    }
+    localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Failed to write storage' };
+  }
 }
 
 export function loadDecksFromStorage(): DeckList[] {
   if (typeof window === 'undefined') return [];
-  const data = localStorage.getItem('warded-ones-decks');
-  return data ? JSON.parse(data) : [];
+  try {
+    const data = localStorage.getItem('warded-ones-decks');
+    if (!data) return [];
+    const parsed = JSON.parse(data) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (d): d is DeckList =>
+        !!d &&
+        typeof d === 'object' &&
+        typeof (d as DeckList).id === 'string' &&
+        Array.isArray((d as DeckList).cards)
+    );
+  } catch {
+    return [];
+  }
 }
 
 export function deleteDeckFromStorage(deckId: string): void {
   if (typeof window === 'undefined') return;
-  const decks = loadDecksFromStorage().filter(d => d.id !== deckId);
-  localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
+  try {
+    const decks = loadDecksFromStorage().filter(d => d.id !== deckId);
+    localStorage.setItem('warded-ones-decks', JSON.stringify(decks));
+  } catch {
+    // ignore
+  }
 }
