@@ -19,11 +19,23 @@ export default function GameLog({ log }: GameLogProps) {
   const lastEntries = log.slice(-20);
 
   return (
-    <div className="bg-gray-950/60 border border-gray-800/50 rounded-lg p-2 h-48 flex flex-col">
-      <div className="text-xs text-gray-400 font-bold mb-1">Battle Log</div>
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-0.5 text-[10px]">
+    <div
+      className="bg-gray-950/60 border border-gray-800/50 rounded-lg p-2 h-48 flex flex-col"
+      role="log"
+      aria-label="Battle log"
+      aria-live="polite"
+      aria-relevant="additions"
+    >
+      <div className="text-xs text-gray-400 font-bold mb-1" id="battle-log-heading">
+        Battle Log
+      </div>
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto space-y-0.5 text-[10px]"
+        aria-labelledby="battle-log-heading"
+      >
         {lastEntries.map((entry, i) => (
-          <div key={i} className="text-gray-400">
+          <div key={`${entry.timestamp}-${i}`} className="text-gray-400">
             <span className="text-purple-400">T{entry.turn}</span>{' '}
             {entry.message}
           </div>
