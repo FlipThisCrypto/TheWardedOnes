@@ -117,6 +117,8 @@ export interface GameState {
   winner: 0 | 1 | null;
   mulliganComplete: [boolean, boolean];
   log: GameLogEntry[];
+  /** Structured events (parallel to human log for replay/UI). */
+  events: import('./events').GameEvent[];
   animationQueue: GameAnimation[];
   /** Seeded PRNG state for deterministic combat/AI/sim */
   rng: { seed: number; state: number };
@@ -128,6 +130,7 @@ export interface GameLogEntry {
   phase: GamePhase;
   message: string;
   timestamp: number;
+  eventType?: string;
 }
 
 export interface GameAnimation {

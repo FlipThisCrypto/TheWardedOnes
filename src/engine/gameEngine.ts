@@ -10,6 +10,7 @@ import { createRng, nextInt, pickRandom, shuffleWithRng } from './rng';
 import { applyDamageToUnit, applyDamageToPlayer } from './damage';
 import { applyStateBasedActions } from './stateBasedActions';
 import { isLegalAttackTarget } from './targeting';
+import { createGameEvent, type GameEventType } from './events';
 
 let instanceCounter = 0;
 function nextInstanceId(): string {
@@ -106,19 +107,34 @@ export function createGameState(
     winner: null,
     mulliganComplete: [false, false],
     log: [],
+    events: [],
     animationQueue: [],
     rng,
   };
 }
 
-export function addLog(state: GameState, message: string): void {
+export function addLog(state: GameState, message: string, eventType: GameEventType = 'message', payload?: Record<string, string | number | boolean | null>): void {
+  const ts = Date.now();
   state.log.push({
     turn: state.turn,
     player: state.currentPlayer,
     phase: state.phase,
     message,
-    timestamp: Date.now(),
+    timestamp: ts,
+    eventType,
   });
+  if (!state.events) state.events = [];
+  state.events.push(
+    createGameEvent({
+      type: eventType,
+      turn: state.turn,
+      player: state.currentPlayer,
+      phase: state.phase,
+      message,
+      timestamp: ts,
+      payload,
+    })
+  );
 }
 
 export function addAnimation(state: GameState, anim: GameAnimation): void {
@@ -127,22 +143,30 @@ export function addAnimation(state: GameState, anim: GameAnimation): void {
 
 // ===== PHASE HANDLERS =====
 
+/** Maximum cards a player may hold; excess draws are milled to graveyard. */
+export const MAX_HAND_SIZE = 10;
+
 export function executeDrawPhase(state: GameState): GameState {
   const newState = structuredClone(state);
   const player = newState.players[newState.currentPlayer];
   
   if (player.deck.length > 0) {
     const drawn = player.deck.shift()!;
-    player.hand.push(drawn);
     const def = getCardById(drawn.definitionId);
-    addLog(newState, `${player.name} draws ${def?.name || 'a card'}.`);
-    addAnimation(newState, { type: 'draw', cardName: def?.name });
+    if (player.hand.length >= MAX_HAND_SIZE) {
+      player.graveyard.push(drawn);
+      addLog(newState, `${player.name} draws ${def?.name || 'a card'} but hand is full — card is discarded.`, 'draw');
+    } else {
+      player.hand.push(drawn);
+      addLog(newState, `${player.name} draws ${def?.name || 'a card'}.`, 'draw');
+      addAnimation(newState, { type: 'draw', cardName: def?.name });
+    }
   } else {
     // Fatigue: scaling damage for each empty draw (1, 2, 3, ...)
     player.fatigueCounter = (player.fatigueCounter ?? 0) + 1;
     const fatigue = player.fatigueCounter;
     player.life -= fatigue;
-    addLog(newState, `${player.name} has no cards to draw! Takes ${fatigue} fatigue damage.`);
+    addLog(newState, `${player.name} has no cards to draw! Takes ${fatigue} fatigue damage.`, 'damage');
   }
   
   newState.phase = 'resource';
