@@ -81,6 +81,27 @@ describe('gameEngine core', () => {
     expect(state.players[0].deck.length).toBe(deckBefore - 1);
   });
 
+  it('full hand mills drawn card to graveyard', () => {
+    let state = setupMatch();
+    state.phase = 'draw';
+    // Fill hand to MAX
+    const filler = state.players[0].deck[0];
+    while (state.players[0].hand.length < 10 && state.players[0].deck.length > 1) {
+      state.players[0].hand.push(state.players[0].deck.shift()!);
+    }
+    // Ensure hand is exactly 10
+    while (state.players[0].hand.length < 10) {
+      state.players[0].hand.push(structuredClone(filler));
+    }
+    state.players[0].hand = state.players[0].hand.slice(0, 10);
+    const deckTop = state.players[0].deck[0];
+    const gyBefore = state.players[0].graveyard.length;
+    state = executeDrawPhase(state);
+    expect(state.players[0].hand).toHaveLength(10);
+    expect(state.players[0].graveyard.length).toBe(gyBefore + 1);
+    expect(state.players[0].graveyard.some(c => c.instanceId === deckTop.instanceId)).toBe(true);
+  });
+
   it('empty deck applies scaling fatigue damage', () => {
     let state = setupMatch();
     state.phase = 'draw';
