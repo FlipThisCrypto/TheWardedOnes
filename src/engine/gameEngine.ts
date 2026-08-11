@@ -8,6 +8,7 @@ import { ABILITIES, getAbility } from './abilities';
 import { getCardById } from '../data/cards';
 import { createRng, nextInt, pickRandom, shuffleWithRng } from './rng';
 import { applyDamageToUnit, applyDamageToPlayer } from './damage';
+import { applyStateBasedActions } from './stateBasedActions';
 
 let instanceCounter = 0;
 function nextInstanceId(): string {
@@ -1118,8 +1119,14 @@ export function executeEndPhase(state: GameState): GameState {
     });
   });
   
-  // Clean up dead cards
-  cleanupDeadCards(newState);
+  // State-based actions: destroy dead units, check win
+  const sba = applyStateBasedActions(newState);
+  for (const d of sba.deaths) {
+    addLog(newState, `${d.name} is destroyed!`);
+  }
+  if (sba.winnerSet && newState.winner !== null) {
+    addLog(newState, `${newState.players[newState.winner].name} wins the game!`);
+  }
   
   // Switch player
   newState.currentPlayer = newState.currentPlayer === 0 ? 1 : 0;
@@ -1134,37 +1141,18 @@ export function executeEndPhase(state: GameState): GameState {
   return newState;
 }
 
-function cleanupDeadCards(state: GameState): void {
-  for (const player of state.players) {
-    const checkSlots = (slots: BattlefieldSlot[]) => {
-      for (const slot of slots) {
-        if (slot.card && slot.card.currentHp <= 0) {
-          player.graveyard.push(slot.card);
-          slot.card = null;
-        }
-      }
-    };
-    
-    if (player.battlefield.mage.card && player.battlefield.mage.card.currentHp <= 0) {
-      player.graveyard.push(player.battlefield.mage.card);
-      player.battlefield.mage.card = null;
-    }
-    checkSlots(player.battlefield.fighters);
-    checkSlots(player.battlefield.beasts);
-    checkSlots(player.battlefield.totems);
-  }
-}
-
 export function checkGameOver(state: GameState): GameState {
   const newState = structuredClone(state);
-  
-  for (let i = 0; i < 2; i++) {
-    if (newState.players[i].life <= 0) {
-      newState.gameOver = true;
-      newState.winner = (i === 0 ? 1 : 0) as 0 | 1;
-      addLog(newState, `${newState.players[newState.winner].name} wins the game!`);
-    }
+  const sba = applyStateBasedActions(newState);
+  if (sba.winnerSet && newState.winner !== null) {
+    addLog(newState, `${newState.players[newState.winner].name} wins the game!`);
   }
-  
+  return newState;
+}
+
+/** Public SBA entry for post-resolution cleanup (tests + future stack). */
+export function runStateBasedActions(state: GameState): GameState {
+  const newState = structuredClone(state);
+  applyStateBasedActions(newState);
   return newState;
 }
