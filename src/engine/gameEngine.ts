@@ -9,6 +9,7 @@ import { getCardById } from '../data/cards';
 import { createRng, nextInt, pickRandom, shuffleWithRng } from './rng';
 import { applyDamageToUnit, applyDamageToPlayer } from './damage';
 import { applyStateBasedActions } from './stateBasedActions';
+import { isLegalAttackTarget } from './targeting';
 
 let instanceCounter = 0;
 function nextInstanceId(): string {
@@ -506,18 +507,13 @@ export function executeAttack(
   const attackerDef = getCardById(attacker.definitionId);
   if (!attackerDef) return state;
   
+  if (!isLegalAttackTarget(newState, targetId)) {
+    addLog(newState, `Illegal attack target (Taunt or invalid).`);
+    return newState;
+  }
+
   if (targetId === 'player') {
     // Direct attack on opponent
-    // Check if there are any units with Taunt keyword
-    const defenders = getAllBattlefieldCards(defenderPlayer).filter(c => {
-      return hasKeyword(c.keywords, 'Taunt') && c.currentHp > 0;
-    });
-    
-    if (defenders.length > 0) {
-      // Must attack taunt unit first — return newState so the rejection is logged
-      addLog(newState, `Cannot attack player directly while Taunt units are in play.`);
-      return newState;
-    }
     
     const face = applyDamageToPlayer(defenderPlayer.life, attacker.currentAttack);
     defenderPlayer.life = face.life;

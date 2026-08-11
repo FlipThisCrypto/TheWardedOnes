@@ -148,7 +148,7 @@ describe('gameEngine core', () => {
     const lifeBefore = state.players[1].life;
     const after = executeAttack(state, placed.instance.instanceId, 'player');
     expect(after.players[1].life).toBe(lifeBefore);
-    expect(after.log.some(e => e.message.includes('Taunt'))).toBe(true);
+    expect(after.log.some(e => /Taunt|Illegal attack/i.test(e.message))).toBe(true);
   });
 
   it('Ward absorbs damage before HP', () => {
