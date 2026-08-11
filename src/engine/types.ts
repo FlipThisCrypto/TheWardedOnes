@@ -64,6 +64,8 @@ export interface CardInstance {
   canAttack: boolean;
   hasAttacked: boolean;
   turnsInPlay: number;
+  /** Ability ids activated this turn (once-per-turn tracking). */
+  abilitiesUsedThisTurn: string[];
 }
 
 export interface StatusEffect {

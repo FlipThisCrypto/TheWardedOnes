@@ -13,8 +13,14 @@ import { isLegalAttackTarget } from './targeting';
 import { createGameEvent, type GameEventType } from './events';
 
 let instanceCounter = 0;
-function nextInstanceId(): string {
-  return `inst_${++instanceCounter}_${Date.now()}`;
+/** Deterministic-friendly ids: counter only (no Date.now) for stable sims. */
+export function nextInstanceId(): string {
+  instanceCounter += 1;
+  return `inst_${instanceCounter}`;
+}
+
+export function resetInstanceCounter(value = 0): void {
+  instanceCounter = value;
 }
 
 export function createCardInstance(def: CardDefinition): CardInstance {
@@ -33,6 +39,7 @@ export function createCardInstance(def: CardDefinition): CardInstance {
     canAttack: hasHaste, // Haste skips summoning sickness
     hasAttacked: false,
     turnsInPlay: 0,
+    abilitiesUsedThisTurn: [],
   };
 }
 
@@ -646,6 +653,14 @@ export function useAbility(
   
   const ability = getAbility(abilityId);
   if (!ability) return state;
+
+  // Once per turn per ability id on a unit
+  if (!caster.abilitiesUsedThisTurn) caster.abilitiesUsedThisTurn = [];
+  if (caster.abilitiesUsedThisTurn.includes(abilityId)) {
+    addLog(newState, `Ability ${ability.name} already used this turn.`, 'illegal_action');
+    return newState;
+  }
+  caster.abilitiesUsedThisTurn.push(abilityId);
   
   const casterDef = getCardById(caster.definitionId);
   
@@ -1096,6 +1111,7 @@ export function executeEndPhase(state: GameState): GameState {
     // Enable attacking for next turn
     card.canAttack = true;
     card.hasAttacked = false;
+    card.abilitiesUsedThisTurn = [];
     card.turnsInPlay += 1;
     
     // Process HOTs
