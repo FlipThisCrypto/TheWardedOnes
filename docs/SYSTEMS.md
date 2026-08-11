@@ -45,3 +45,12 @@ Pass `seed` to `createGameState`. All match randomness (shuffle, AI jitter, rand
 npm test
 npm run build
 ```
+
+## Round 2 control plane
+
+Prefer these entrypoints for new work:
+
+- `turnMachine.ts` / `actions.ts` / `matchSession.ts` — phase + command API
+- `effectIr.ts` + `effectInterpreter.ts` + `stack.ts` — data-driven effects
+- `legalMoves.ts` + `aiPolicy.ts` — rules-driven AI
+- `docs/LOGIC_LAYER.md` — full module map
