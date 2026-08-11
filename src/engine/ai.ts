@@ -8,12 +8,14 @@ import {
 } from './gameEngine';
 import { getAbility } from './abilities';
 import { hasKeyword } from './keywords';
+import { createRng, nextFloat, pickRandom } from './rng';
 
 export type AIPersonality = 'aggro' | 'control' | 'balanced';
 
-export function getRandomPersonality(): AIPersonality {
+export function getRandomPersonality(seed?: number): AIPersonality {
   const types: AIPersonality[] = ['aggro', 'control', 'balanced'];
-  return types[Math.floor(Math.random() * types.length)];
+  const rng = createRng(seed ?? Date.now() >>> 0);
+  return pickRandom(rng, types)!;
 }
 
 interface ScoredAction {
@@ -50,8 +52,8 @@ export function getAIActions(state: GameState, personality: AIPersonality = 'bal
       if (!def) continue;
       
       let score = evaluatePlayScore(def, aiPlayer, opponent, personality);
-      // Add slight randomness
-      score += (Math.random() - 0.5) * 2;
+      // Add slight randomness (seeded)
+      score += (nextFloat(state.rng) - 0.5) * 2;
       
       // Personality: control AI holds utility cards for board clears
       if (personality === 'control' && def.type === 'Utility') {
@@ -95,7 +97,7 @@ export function getAIActions(state: GameState, personality: AIPersonality = 'bal
       if (!enemyDef) continue;
       
       let score = evaluateAttackScore(unit, unitDef, enemy, enemyDef);
-      score += (Math.random() - 0.5) * 1.5;
+      score += (nextFloat(state.rng) - 0.5) * 1.5;
       
       actions.push({
         type: 'attack',
@@ -152,7 +154,7 @@ export function getAIActions(state: GameState, personality: AIPersonality = 'bal
           const urgency = aiPlayer.life < 10 ? 15 : 5;
           actions.push({
             type: 'ability',
-            score: healValue + urgency + (Math.random() * 2),
+            score: healValue + urgency + (nextFloat(state.rng) * 2),
             cardId: unit.instanceId,
             abilityId,
             targetId: injured[0].instanceId,
@@ -165,7 +167,7 @@ export function getAIActions(state: GameState, personality: AIPersonality = 'bal
           const canKill = enemy.currentHp <= ability.damage;
           actions.push({
             type: 'ability',
-            score: (ability.damage || 0) + (canKill ? 10 : 0) + (Math.random() * 2),
+            score: (ability.damage || 0) + (canKill ? 10 : 0) + (nextFloat(state.rng) * 2),
             cardId: unit.instanceId,
             abilityId,
             targetId: enemy.instanceId,
@@ -174,7 +176,7 @@ export function getAIActions(state: GameState, personality: AIPersonality = 'bal
       } else if (ability.type === 'defensive') {
         actions.push({
           type: 'ability',
-          score: 4 + (Math.random() * 3),
+          score: 4 + (nextFloat(state.rng) * 3),
           cardId: unit.instanceId,
           abilityId,
           targetId: unit.instanceId,
@@ -184,7 +186,7 @@ export function getAIActions(state: GameState, personality: AIPersonality = 'bal
         if (targets.length > 0) {
           actions.push({
             type: 'ability',
-            score: 5 + (Math.random() * 3),
+            score: 5 + (nextFloat(state.rng) * 3),
             cardId: unit.instanceId,
             abilityId,
             targetId: targets[0]?.instanceId,

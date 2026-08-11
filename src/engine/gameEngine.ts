@@ -6,6 +6,7 @@ import { KeywordData, hasKeyword, getKeywordValue, removeKeyword } from './keywo
 import { getElementModifier } from './elements';
 import { ABILITIES, getAbility } from './abilities';
 import { getCardById } from '../data/cards';
+import { createRng, nextInt, pickRandom, shuffleWithRng } from './rng';
 
 let instanceCounter = 0;
 function nextInstanceId(): string {
@@ -31,7 +32,7 @@ export function createCardInstance(def: CardDefinition): CardInstance {
   };
 }
 
-export function buildDeck(cardIds: string[]): CardInstance[] {
+export function buildDeck(cardIds: string[], rng = createRng()): CardInstance[] {
   const deck: CardInstance[] = [];
   for (const id of cardIds) {
     const def = getCardById(id);
@@ -39,25 +40,27 @@ export function buildDeck(cardIds: string[]): CardInstance[] {
       deck.push(createCardInstance(def));
     }
   }
-  return shuffleArray(deck);
+  return shuffleWithRng(rng, deck);
 }
 
+/** Unseeded shuffle for non-match UI paths; prefer shuffleDeck(state, arr) in-match. */
 export function shuffleArray<T>(arr: T[]): T[] {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
+  const rng = createRng();
+  return shuffleWithRng(rng, arr);
+}
+
+export function shuffleDeck<T>(state: GameState, arr: T[]): T[] {
+  return shuffleWithRng(state.rng, arr);
 }
 
 export function createInitialPlayerState(
   id: string,
   name: string,
   selectedClass: CardClass,
-  deckCardIds: string[]
+  deckCardIds: string[],
+  rng = createRng()
 ): PlayerState {
-  const deck = buildDeck(deckCardIds);
+  const deck = buildDeck(deckCardIds, rng);
   const hand = deck.splice(0, 5); // draw 5
 
   return {
@@ -82,22 +85,25 @@ export function createInitialPlayerState(
 export function createGameState(
   mode: GameMode,
   p1Name: string, p1Class: CardClass, p1Deck: string[],
-  p2Name: string, p2Class: CardClass, p2Deck: string[]
+  p2Name: string, p2Class: CardClass, p2Deck: string[],
+  seed?: number
 ): GameState {
+  const rng = createRng(seed ?? Date.now() >>> 0);
+  // Deterministic deck builds when seed provided
+  const p1 = createInitialPlayerState('p1', p1Name, p1Class, p1Deck, rng);
+  const p2 = createInitialPlayerState('p2', p2Name, p2Class, p2Deck, rng);
   return {
     mode,
     currentPlayer: 0,
     phase: 'mulligan',
     turn: 1,
-    players: [
-      createInitialPlayerState('p1', p1Name, p1Class, p1Deck),
-      createInitialPlayerState('p2', p2Name, p2Class, p2Deck),
-    ],
+    players: [p1, p2],
     gameOver: false,
     winner: null,
     mulliganComplete: [false, false],
     log: [],
     animationQueue: [],
+    rng,
   };
 }
 
@@ -249,7 +255,7 @@ export function playCard(state: GameState, cardInstanceId: string, targetSlotInd
           if (ability.type === 'offensive' && ability.damage) {
             const enemies = getAllBattlefieldCards(opponent);
             if (enemies.length > 0) {
-              const enemy = enemies[Math.floor(Math.random() * enemies.length)];
+              const enemy = pickRandom(newState.rng, enemies)!;
               enemy.currentHp -= ability.damage;
               addLog(newState, `${def.name} triggers ${ability.name} on ${getCardById(enemy.definitionId)?.name}!`);
               if (enemy.currentHp <= 0) {
@@ -413,7 +419,7 @@ function executeUtilityCard(state: GameState, card: CardInstance, def: CardDefin
     case 'u_steal':
       // Steal a random card from opponent hand
       if (opponent.hand.length > 0) {
-        const idx = Math.floor(Math.random() * opponent.hand.length);
+        const idx = nextInt(state.rng, opponent.hand.length);
         player.hand.push(opponent.hand.splice(idx, 1)[0]);
       }
       break;
@@ -447,8 +453,8 @@ function executeUtilityCard(state: GameState, card: CardInstance, def: CardDefin
       // Random damage 3-8 to random enemy
       const enemies = getAllBattlefieldCards(opponent);
       if (enemies.length > 0) {
-        const target = enemies[Math.floor(Math.random() * enemies.length)];
-        const dmg = 3 + Math.floor(Math.random() * 6);
+        const target = pickRandom(state.rng, enemies)!;
+        const dmg = 3 + nextInt(state.rng, 6);
         target.currentHp -= dmg;
       }
       break;
@@ -810,10 +816,10 @@ export function useAbility(
       }
       if (ability.special === 'random_spell') {
         const allAbilities = Object.values(ABILITIES).filter(a => a.type === 'offensive');
-        const randomAbility = allAbilities[Math.floor(Math.random() * allAbilities.length)];
+        const randomAbility = pickRandom(newState.rng, allAbilities);
         const enemies = getAllBattlefieldCards(opponent);
-        if (enemies.length > 0 && randomAbility.damage) {
-          const target = enemies[Math.floor(Math.random() * enemies.length)];
+        if (randomAbility && enemies.length > 0 && randomAbility.damage) {
+          const target = pickRandom(newState.rng, enemies)!;
           target.currentHp -= randomAbility.damage;
           addLog(newState, `Random Spell casts ${randomAbility.name} on ${getCardById(target.definitionId)?.name}!`);
           addAnimation(newState, { type: 'spell', element: randomAbility.element, targetId: target.instanceId, value: randomAbility.damage });
@@ -983,7 +989,7 @@ function processTotemEffects(state: GameState, player: PlayerState, opponent: Pl
         // Deal 2 damage to a random enemy
         const enemies = getAllBattlefieldCards(opponent);
         if (enemies.length > 0) {
-          const target = enemies[Math.floor(Math.random() * enemies.length)];
+          const target = pickRandom(state.rng, enemies)!;
           target.currentHp -= 2;
           const tDef = getCardById(target.definitionId);
           addLog(state, `${totemDef.name} hurls fire at ${tDef?.name} for 2 damage!`);
@@ -1011,7 +1017,7 @@ function processTotemEffects(state: GameState, player: PlayerState, opponent: Pl
         // Randomly swap ATK/DEF on a random enemy
         const enemies = getAllBattlefieldCards(opponent);
         if (enemies.length > 0) {
-          const target = enemies[Math.floor(Math.random() * enemies.length)];
+          const target = pickRandom(state.rng, enemies)!;
           const temp = target.currentAttack;
           target.currentAttack = target.currentDefense;
           target.currentDefense = temp;

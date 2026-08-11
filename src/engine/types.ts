@@ -116,6 +116,8 @@ export interface GameState {
   mulliganComplete: [boolean, boolean];
   log: GameLogEntry[];
   animationQueue: GameAnimation[];
+  /** Seeded PRNG state for deterministic combat/AI/sim */
+  rng: { seed: number; state: number };
 }
 
 export interface GameLogEntry {
