@@ -17,7 +17,10 @@ export default function PlayerHUD({ player, isActive, position, side = false }: 
 
   if (side) {
     return (
-      <div className={`
+      <div
+        role="region"
+        aria-label={`${player.name} status${isActive ? ', active turn' : ''}`}
+        className={`
         flex flex-col items-center gap-1 px-2 py-3 rounded-lg w-16 flex-shrink-0
         ${isActive ? 'bg-purple-900/40 border border-purple-500/50' : 'bg-gray-900/40 border border-gray-700/30'}
       `}>
@@ -38,12 +41,20 @@ export default function PlayerHUD({ player, isActive, position, side = false }: 
             transition={{ duration: 0.5 }}
           />
         </div>
-        <span className="text-[10px] text-red-400 font-bold">{player.life}</span>
+        <span className="text-[10px] text-red-400 font-bold" aria-label={`Life ${player.life}`}>
+          {player.life}
+        </span>
         
         <div className="flex flex-col items-center gap-0.5 mt-1">
-          <span className="text-[10px] text-blue-400">💎{player.resources}</span>
-          <span className="text-[10px] text-gray-500">🃏{player.deck.length}</span>
-          <span className="text-[10px] text-gray-500">✋{player.hand.length}</span>
+          <span className="text-[10px] text-blue-400" aria-label={`Resources ${player.resources}`}>
+            💎{player.resources}
+          </span>
+          <span className="text-[10px] text-gray-500" aria-label={`Deck ${player.deck.length}`}>
+            🃏{player.deck.length}
+          </span>
+          <span className="text-[10px] text-gray-500" aria-label={`Hand ${player.hand.length}`}>
+            ✋{player.hand.length}
+          </span>
         </div>
       </div>
     );
