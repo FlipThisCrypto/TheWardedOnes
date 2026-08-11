@@ -107,6 +107,18 @@ export interface PlayerState {
 
 export type GamePhase = 'mulligan' | 'draw' | 'resource' | 'main' | 'combat' | 'end';
 
+/** Closed set of player intent kinds for the action reducer / turn machine. */
+export type PlayerActionKind =
+  | 'MULLIGAN'
+  | 'PLAY_CARD'
+  | 'ATTACH_RELIC'
+  | 'EVOLVE'
+  | 'ACTIVATE_ABILITY'
+  | 'DECLARE_ATTACK'
+  | 'ADVANCE_PHASE'
+  | 'END_TURN'
+  | 'CONCEDE';
+
 export type GameMode = 'ai' | 'pvp';
 
 export interface GameState {
