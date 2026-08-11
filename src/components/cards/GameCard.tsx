@@ -57,16 +57,37 @@ export default function GameCard({
   const isHurt = card && card.currentHp < def!.hp;
   const isBoosted = card && (card.currentAttack > def!.attack || card.currentDefense > def!.defense);
 
+  const label = [
+    def!.name,
+    `cost ${def!.cost}`,
+    def!.type !== 'Utility' ? `attack ${atk} defense ${defStat} hp ${hp}` : null,
+    selected ? 'selected' : null,
+    disabled ? 'unavailable' : null,
+  ].filter(Boolean).join(', ');
+
   return (
     <motion.div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={label}
+      aria-disabled={disabled || undefined}
+      aria-pressed={selected || undefined}
       whileHover={disabled ? {} : { y: small ? -6 : -8, scale: 1.05 }}
       whileTap={disabled ? {} : { scale: 0.95 }}
       onClick={disabled ? undefined : onClick}
+      onKeyDown={e => {
+        if (disabled || !onClick) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className={`
         ${small ? 'w-32 h-44' : 'w-36 h-52'}
         rounded-lg border relative overflow-hidden flex-shrink-0
         cursor-pointer select-none
         transition-all duration-200
+        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-400
         ${selected ? 'ring-2 ring-yellow-400 ring-offset-1 ring-offset-black border-yellow-400' : 'border-gray-700'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
