@@ -283,8 +283,17 @@ export const ALL_CARDS: CardDefinition[] = [
   { id: 'u_chaos_bolt', name: 'Chaos Bolt', cardClass: 'Jester', elements: ['Arcane', 'Fire'], type: 'Utility', level: 1, cost: 2, hp: 0, attack: 0, defense: 0, speed: 0, abilities: ['random_spell'], flavorText: 'Aim is optional. Chaos is guaranteed.', },
 ];
 
+/** O(1) lookup index — rebuilt once at module load. */
+const CARD_BY_ID: Map<string, CardDefinition> = new Map(
+  ALL_CARDS.map(c => [c.id, c])
+);
+
 export function getCardById(id: string): CardDefinition | undefined {
-  return ALL_CARDS.find(c => c.id === id);
+  return CARD_BY_ID.get(id);
+}
+
+export function getAllCardIds(): string[] {
+  return Array.from(CARD_BY_ID.keys());
 }
 
 export function getCardsByClass(cardClass: string): CardDefinition[] {
