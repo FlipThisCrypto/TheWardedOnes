@@ -11,6 +11,8 @@ import {
 } from '../engine/gameEngine';
 import { executeAITurn, aiMulligan, getRandomPersonality, AIPersonality } from '../engine/ai';
 import { generateDefaultDeck } from '../engine/deckUtils';
+import { advanceTurnMachine } from '../engine/turnMachine';
+import { applyPlayerAction } from '../engine/actions';
 
 interface GameStore {
   gameState: GameState | null;
@@ -73,43 +75,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
   advancePhase: () => {
     const { gameState } = get();
     if (!gameState || gameState.gameOver) return;
-    
-    let newState = structuredClone(gameState);
-    
-    switch (newState.phase) {
-      case 'draw':
-        newState = executeDrawPhase(newState);
-        newState = executeResourcePhase(newState);
-        break;
-      case 'resource':
-        newState.phase = 'main';
-        break;
-      case 'main':
-        newState.phase = 'combat';
-        break;
-      case 'combat':
-        newState.phase = 'end';
-        break;
-      case 'end':
-        newState = executeEndPhase(newState);
-        newState = checkGameOver(newState);
-        if (!newState.gameOver) {
-          // Auto draw and resource for next player
-          newState = executeDrawPhase(newState);
-          newState = executeResourcePhase(newState);
-        }
-        break;
+
+    // Prefer formal turn machine for single-step advances
+    const advanced = advanceTurnMachine(gameState);
+    if (!advanced.ok) return;
+    let newState = advanced.state;
+
+    // Convenience: draw auto-continues through resource (legacy UX)
+    if (gameState.phase === 'draw' && newState.phase === 'resource') {
+      const res = advanceTurnMachine(newState);
+      if (res.ok) newState = res.state;
     }
-    
+    // After end → draw, auto resource→main
+    if (gameState.phase === 'end' && newState.phase === 'draw') {
+      newState = checkGameOver(newState);
+      if (!newState.gameOver) {
+        const d = advanceTurnMachine(newState);
+        if (d.ok) {
+          const r = advanceTurnMachine(d.state);
+          if (r.ok) newState = r.state;
+        }
+      }
+    }
+
     set({ gameState: { ...newState, animationQueue: [] }, currentAnimations: newState.animationQueue });
   },
   
   advanceToCombat: () => {
     const { gameState } = get();
     if (!gameState || gameState.phase !== 'main') return;
-    const newState = structuredClone(gameState);
-    newState.phase = 'combat';
-    set({ gameState: newState });
+    const r = applyPlayerAction(gameState, { type: 'ADVANCE_PHASE' });
+    if (r.ok) set({ gameState: r.state });
   },
   
   selectCard: (instanceId) => set({ selectedCard: instanceId }),
