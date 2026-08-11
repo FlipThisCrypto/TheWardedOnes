@@ -6,6 +6,7 @@ import { ELEMENT_COLORS, ELEMENT_STRENGTHS, CLASS_ICONS } from '../../engine/ele
 import { Element, CardClass } from '../../engine/types';
 import GameCard from '../../components/cards/GameCard';
 import { ALL_CARDS } from '../../data/cards';
+import { listKeywordDefinitions } from '../../engine/keywords';
 
 const ELEMENTS: Element[] = ['Fire', 'Water', 'Earth', 'Air', 'Lightning', 'Ice', 'Nature', 'Arcane', 'Light', 'Shadow'];
 
@@ -73,6 +74,18 @@ const RULES_SECTIONS = [
 - 10 Relics
 - 5 Totems
 - 8 Utility cards`,
+  },
+  {
+    title: 'Keywords',
+    icon: '🔑',
+    content: listKeywordDefinitions()
+      .map(k => `**${k.id}**${k.hasValue ? ' X' : ''} — ${k.summary}`)
+      .join('\n'),
+  },
+  {
+    title: 'Fatigue',
+    icon: '💀',
+    content: 'When your deck is empty, each draw attempt deals escalating fatigue damage (1, then 2, then 3, …) to your Life.',
   },
 ];
 
