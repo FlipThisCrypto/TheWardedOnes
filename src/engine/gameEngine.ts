@@ -14,6 +14,7 @@ import { createGameEvent, type GameEventType } from './events';
 import { computeCombatRawDamage } from './combatMath';
 import { applyHotTicks, applyDotTicks, tickStatusDurations } from './statusEffects';
 import { applyEvolution } from './evolution';
+import { applyLifesteal } from './lifesteal';
 
 let instanceCounter = 0;
 /** Deterministic-friendly ids: counter only (no Date.now) for stable sims. */
@@ -519,9 +520,9 @@ export function executeAttack(
     attacker.hasAttacked = true;
     
     // Lifesteal: heal controller
-    if (hasKeyword(attacker.keywords, 'Lifesteal')) {
-      attackerPlayer.life += damage;
-      addLog(newState, `${attackerDef.name} steals ${damage} life!`);
+    const stolenFace = applyLifesteal(attackerPlayer, attacker, damage);
+    if (stolenFace > 0) {
+      addLog(newState, `${attackerDef.name} steals ${stolenFace} life!`);
     }
     
     addLog(newState, `${attackerDef.name} attacks ${defenderPlayer.name} for ${damage} damage!`);
@@ -562,9 +563,9 @@ export function executeAttack(
     }
     
     // Lifesteal: heal controller for actual damage dealt to HP
-    if (hasKeyword(attacker.keywords, 'Lifesteal') && damage > 0) {
-      attackerPlayer.life += damage;
-      addLog(newState, `${attackerDef.name} steals ${damage} life!`);
+    const stolen = applyLifesteal(attackerPlayer, attacker, damage);
+    if (stolen > 0) {
+      addLog(newState, `${attackerDef.name} steals ${stolen} life!`);
     }
     
     addLog(newState, `${attackerDef.name} attacks ${targetDef.name} for ${damage} damage${elementMod !== 0 ? ` (element: ${elementMod > 0 ? '+' : ''}${elementMod})` : ''}.`);
