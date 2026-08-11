@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wardedones.tcg/schemas/card.schema.json",
+  "title": "WardedOnesCardDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "cardClass",
+    "elements",
+    "type",
+    "level",
+    "cost",
+    "hp",
+    "attack",
+    "defense",
+    "speed",
+    "abilities",
+    "flavorText"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "name": { "type": "string", "minLength": 1 },
+    "cardClass": {
+      "type": "string",
+      "enum": [
+        "Battlemage",
+        "Elementalist",
+        "Chronomancer",
+        "Warlock",
+        "Priest",
+        "Beastmaster",
+        "Trickster",
+        "Jester",
+        "Guardian",
+        "Warrior"
+      ]
+    },
+    "elements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "Fire",
+          "Water",
+          "Earth",
+          "Air",
+          "Lightning",
+          "Ice",
+          "Nature",
+          "Arcane",
+          "Light",
+          "Shadow"
+        ]
+      }
+    },
+    "type": {
+      "type": "string",
+      "enum": ["Mage", "Fighter", "Beast", "Relic", "Totem", "Utility"]
+    },
+    "level": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "cost": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "hp": { "type": "integer", "minimum": 0, "maximum": 99 },
+    "attack": { "type": "integer", "minimum": 0, "maximum": 99 },
+    "defense": { "type": "integer", "minimum": 0, "maximum": 99 },
+    "speed": { "type": "integer", "minimum": 0, "maximum": 99 },
+    "abilities": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["keyword"],
+        "additionalProperties": false,
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "enum": [
+              "Ward",
+              "Fortify",
+              "Pierce",
+              "Lifesteal",
+              "Haste",
+              "Taunt",
+              "Hex",
+              "Echo"
+            ]
+          },
+          "value": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "flavorText": { "type": "string" },
+    "evolvesFrom": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+    "evolvesTo": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+  }
+}
