@@ -10,14 +10,17 @@ import { generateDefaultDeck } from './deckUtils';
 // Minimal localStorage mock for node tests
 function installMemoryStorage() {
   const store = new Map<string, string>();
-  // @ts-expect-error test mock
-  globalThis.window = {
-    localStorage: {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => { store.set(k, v); },
-      removeItem: (k: string) => { store.delete(k); },
-    },
+  const localStorage: Storage = {
+    get length() { return store.size; },
+    clear: () => { store.clear(); },
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => { store.set(k, v); },
+    removeItem: (k: string) => { store.delete(k); },
+    key: (i: number) => Array.from(store.keys())[i] ?? null,
   };
+  (globalThis as unknown as { window: Window }).window = {
+    localStorage,
+  } as Window;
   return store;
 }
 

@@ -16,6 +16,7 @@ function makeUnit(overrides: Partial<CardInstance> = {}): CardInstance {
     canAttack: true,
     hasAttacked: false,
     turnsInPlay: 1,
+    abilitiesUsedThisTurn: [],
     ...overrides,
   };
 }
