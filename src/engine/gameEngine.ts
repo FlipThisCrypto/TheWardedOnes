@@ -7,6 +7,7 @@ import { getElementModifier } from './elements';
 import { ABILITIES, getAbility } from './abilities';
 import { getCardById } from '../data/cards';
 import { createRng, nextInt, pickRandom, shuffleWithRng } from './rng';
+import { applyDamageToUnit, applyDamageToPlayer } from './damage';
 
 let instanceCounter = 0;
 function nextInstanceId(): string {
@@ -514,8 +515,9 @@ export function executeAttack(
       return newState;
     }
     
-    let damage = Math.max(1, attacker.currentAttack);
-    defenderPlayer.life -= damage;
+    const face = applyDamageToPlayer(defenderPlayer.life, attacker.currentAttack);
+    defenderPlayer.life = face.life;
+    const damage = face.damage;
     attacker.hasAttacked = true;
     
     // Lifesteal: heal controller
@@ -542,42 +544,22 @@ export function executeAttack(
     // Calculate damage with element modifiers
     const elementMod = getElementModifier(attackerDef.elements, targetDef.elements);
     
-    // Pierce: ignore target defense entirely
-    const targetDefense = hasKeyword(attacker.keywords, 'Pierce') ? 0 : target.currentDefense;
-    let rawDamage = attacker.currentAttack - targetDefense + elementMod;
+    // Pierce: ignore target defense entirely; also pierces wards
+    const pierces = hasKeyword(attacker.keywords, 'Pierce');
+    const targetDefense = pierces ? 0 : target.currentDefense;
+    const rawDamage = attacker.currentAttack - targetDefense + elementMod;
     
-    // Fortify: reduce incoming damage by 1 (min 1)
-    if (hasKeyword(target.keywords, 'Fortify')) {
-      rawDamage = Math.max(1, rawDamage - 1);
-    }
-    
-    let damage = Math.max(1, rawDamage);
-    
-    // Ward: absorb damage before HP
-    if (hasKeyword(target.keywords, 'Ward')) {
-      const wardIdx = target.keywords!.findIndex(k => k.keyword === 'Ward');
-      if (wardIdx !== -1) {
-        const wardValue = target.keywords![wardIdx].value ?? 0;
-        if (wardValue > 0) {
-          if (damage <= wardValue) {
-            target.keywords![wardIdx].value = wardValue - damage;
-            addLog(newState, `${targetDef.name}'s Ward absorbs ${damage} damage! (Ward: ${wardValue - damage} remaining)`);
-            damage = 0;
-          } else {
-            damage -= wardValue;
-            target.keywords![wardIdx].value = 0;
-            addLog(newState, `${targetDef.name}'s Ward absorbs ${wardValue} damage and breaks!`);
-          }
-          // Remove Ward if depleted
-          if (target.keywords![wardIdx].value! <= 0) {
-            target.keywords = removeKeyword(target.keywords!, 'Ward');
-          }
-        }
-      }
-    }
-    
-    target.currentHp -= damage;
+    const dmgResult = applyDamageToUnit(target, {
+      amount: rawDamage,
+      pierceWards: pierces,
+      minimumOne: true,
+    });
+    const damage = dmgResult.hpDamage;
     attacker.hasAttacked = true;
+
+    for (const part of dmgResult.logParts) {
+      addLog(newState, `${targetDef.name}: ${part}`);
+    }
     
     // Lifesteal: heal controller for actual damage dealt to HP
     if (hasKeyword(attacker.keywords, 'Lifesteal') && damage > 0) {
@@ -595,7 +577,7 @@ export function executeAttack(
     });
     
     // Check if target died
-    if (target.currentHp <= 0) {
+    if (dmgResult.killed) {
       removeCardFromBattlefield(defenderPlayer, targetId);
       defenderPlayer.graveyard.push(target);
       addLog(newState, `${targetDef.name} is destroyed!`);
@@ -605,43 +587,19 @@ export function executeAttack(
     // Counter-attack: if target survived and can attack
     if (target.currentHp > 0 && target.currentAttack > 0) {
       const counterMod = getElementModifier(targetDef.elements, attackerDef.elements);
+      const counterPierces = hasKeyword(target.keywords, 'Pierce');
+      const attackerDefense = counterPierces ? 0 : attacker.currentDefense;
+      const counterRaw = target.currentAttack - attackerDefense + counterMod;
       
-      // Counter-attack also respects Pierce on the counter-attacker
-      const attackerDefense = hasKeyword(target.keywords, 'Pierce') ? 0 : attacker.currentDefense;
-      let counterRaw = target.currentAttack - attackerDefense + counterMod;
+      const counter = applyDamageToUnit(attacker, {
+        amount: counterRaw,
+        pierceWards: counterPierces,
+        minimumOne: true,
+      });
       
-      // Fortify on attacker reduces counter damage
-      if (hasKeyword(attacker.keywords, 'Fortify')) {
-        counterRaw = Math.max(1, counterRaw - 1);
-      }
+      addLog(newState, `${targetDef.name} counter-attacks for ${counter.hpDamage} damage.`);
       
-      let counterDamage = Math.max(1, counterRaw);
-      
-      // Ward on attacker absorbs counter damage
-      if (hasKeyword(attacker.keywords, 'Ward')) {
-        const wardIdx = attacker.keywords!.findIndex(k => k.keyword === 'Ward');
-        if (wardIdx !== -1) {
-          const wardValue = attacker.keywords![wardIdx].value ?? 0;
-          if (wardValue > 0) {
-            if (counterDamage <= wardValue) {
-              attacker.keywords![wardIdx].value = wardValue - counterDamage;
-              counterDamage = 0;
-            } else {
-              counterDamage -= wardValue;
-              attacker.keywords![wardIdx].value = 0;
-            }
-            if (attacker.keywords![wardIdx].value! <= 0) {
-              attacker.keywords = removeKeyword(attacker.keywords!, 'Ward');
-            }
-          }
-        }
-      }
-      
-      attacker.currentHp -= counterDamage;
-      
-      addLog(newState, `${targetDef.name} counter-attacks for ${counterDamage} damage.`);
-      
-      if (attacker.currentHp <= 0) {
+      if (counter.killed) {
         removeCardFromBattlefield(attackerPlayer, attackerId);
         attackerPlayer.graveyard.push(attacker);
         addLog(newState, `${attackerDef.name} is destroyed!`);
@@ -693,12 +651,12 @@ export function useAbility(
         const target = findCardOnBattlefield(opponent, targetId);
         if (target) {
           const targetDef = getCardById(target.definitionId);
-          let damage = ability.damage || 0;
+          let amount = ability.damage || 0;
           if (ability.element && targetDef) {
-            damage += getElementModifier([ability.element], targetDef.elements);
+            amount += getElementModifier([ability.element], targetDef.elements);
           }
-          damage = Math.max(1, damage);
-          target.currentHp -= damage;
+          const result = applyDamageToUnit(target, { amount, minimumOne: true });
+          const damage = result.hpDamage;
           
           if (ability.speedMod) {
             target.currentSpeed = Math.max(0, target.currentSpeed + ability.speedMod);
@@ -718,7 +676,7 @@ export function useAbility(
           addLog(newState, `${casterDef?.name} uses ${ability.name} on ${targetDef?.name} for ${damage} damage.`);
           addAnimation(newState, { type: 'spell', sourceId: casterId, targetId, element: ability.element, value: damage });
           
-          if (target.currentHp <= 0) {
+          if (result.killed) {
             removeCardFromBattlefield(opponent, targetId);
             opponent.graveyard.push(target);
             addAnimation(newState, { type: 'death', targetId });
