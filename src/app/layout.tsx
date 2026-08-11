@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'The Warded Ones TCG',
   description: 'A dark fantasy trading card game. Master 10 classes, wield 10 elements, and battle for supremacy.',
+  applicationName: 'The Warded Ones TCG',
+  themeColor: '#0a0a0f',
+  robots: { index: true, follow: true },
   openGraph: {
     title: 'The Warded Ones TCG',
     description: 'A dark fantasy trading card game.',
