@@ -99,6 +99,8 @@ export interface PlayerState {
   };
   graveyard: CardInstance[];
   selectedClass: CardClass;
+  /** Consecutive empty draws; fatigue damage = counter after increment. */
+  fatigueCounter: number;
 }
 
 export type GamePhase = 'mulligan' | 'draw' | 'resource' | 'main' | 'combat' | 'end';

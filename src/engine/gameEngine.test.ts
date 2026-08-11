@@ -81,6 +81,21 @@ describe('gameEngine core', () => {
     expect(state.players[0].deck.length).toBe(deckBefore - 1);
   });
 
+  it('empty deck applies scaling fatigue damage', () => {
+    let state = setupMatch();
+    state.phase = 'draw';
+    state.players[0].deck = [];
+    state.players[0].fatigueCounter = 0;
+    state.players[0].life = 30;
+    state = executeDrawPhase(state);
+    expect(state.players[0].life).toBe(29);
+    expect(state.players[0].fatigueCounter).toBe(1);
+    state.phase = 'draw';
+    state = executeDrawPhase(state);
+    expect(state.players[0].life).toBe(27);
+    expect(state.players[0].fatigueCounter).toBe(2);
+  });
+
   it('canPlayCard rejects unaffordable cards', () => {
     const state = setupMatch();
     const player = state.players[0];

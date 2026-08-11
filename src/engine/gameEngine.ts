@@ -81,6 +81,7 @@ export function createInitialPlayerState(
     },
     graveyard: [],
     selectedClass,
+    fatigueCounter: 0,
   };
 }
 
@@ -136,9 +137,11 @@ export function executeDrawPhase(state: GameState): GameState {
     addLog(newState, `${player.name} draws ${def?.name || 'a card'}.`);
     addAnimation(newState, { type: 'draw', cardName: def?.name });
   } else {
-    // Fatigue: take damage if deck is empty
-    player.life -= 1;
-    addLog(newState, `${player.name} has no cards to draw! Takes 1 fatigue damage.`);
+    // Fatigue: scaling damage for each empty draw (1, 2, 3, ...)
+    player.fatigueCounter = (player.fatigueCounter ?? 0) + 1;
+    const fatigue = player.fatigueCounter;
+    player.life -= fatigue;
+    addLog(newState, `${player.name} has no cards to draw! Takes ${fatigue} fatigue damage.`);
   }
   
   newState.phase = 'resource';
@@ -1053,9 +1056,9 @@ export function performMulligan(state: GameState, cardIndicesToReplace: number[]
     }
   }
   
-  // Put cards back and shuffle
+  // Put cards back and shuffle with match RNG
   player.deck.push(...replacedCards);
-  player.deck = shuffleArray(player.deck);
+  player.deck = shuffleDeck(newState, player.deck);
   
   // Draw same number
   const drawCount = replacedCards.length;
